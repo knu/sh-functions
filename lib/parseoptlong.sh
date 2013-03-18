@@ -140,7 +140,7 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
             when="$when|$option"
         done
         echo "\
- ${when#|})
+ ${when#"|"})
   $name=\"\$OPTARG\"
   unset OPTARG ;;"
     fi
@@ -153,13 +153,13 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
         done
         if [ -n "$carp" ]; then
             echo "\
- ${when#|})
+ ${when#"|"})
   $name='?'
   echo \"\$0: option does not take an argument -- \${OPTARG%%=*}\" >&2
   unset OPTARG ;;"
         else
             echo "\
- ${when#|})
+ ${when#"|"})
   $name='?'
   OPTARG=\"\${OPTARG%%=*}\" ;;"
         fi
@@ -172,7 +172,7 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
             when="$when|$option\=*"
         done
         echo "\
- ${when#|})
+ ${when#"|"})
   $name=\"\${OPTARG%%=*}\"
   OPTARG=\"\${OPTARG#*=}\" ;;"
     fi
@@ -188,7 +188,7 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
         # internal space.  Shifting is the only way to let getopts
         # continue parsing correctly on those shells.
         echo "\
- ${when#|})
+ ${when#"|"})
   if [ \$# -ge \$OPTIND ]; then
    $name=\"\$OPTARG\"
    shift \$((OPTIND-1))
