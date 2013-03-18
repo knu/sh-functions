@@ -19,7 +19,7 @@ test1 () {
         eval "$parseoptlong"
         case "$opt" in
             h|help|v|verbose)
-                echo $opt${OPTARG++}
+                echo $opt${OPTARG:++}
                 ;;
             u|user)
                 echo "u=$OPTARG"
