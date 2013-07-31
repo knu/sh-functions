@@ -18,13 +18,13 @@ test1 () {
     while getopts hvu:-: opt; do
         eval "$parseoptlong"
         case "$opt" in
-            h|help|v|verbose)
-                echo $opt${OPTARG:++}
+            h|-help|v|-verbose)
+                echo ${opt#-}${OPTARG:++}
                 ;;
-            u|user)
+            u|-user)
                 echo "u=$OPTARG"
                 ;;
-            password)
+            -password)
                 if [ -n "${OPTARG+t}" ]; then
                     echo "P=$OPTARG"
                 else

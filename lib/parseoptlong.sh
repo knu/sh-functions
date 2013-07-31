@@ -11,7 +11,8 @@
 #   evaluated in a getopts(1) loop to get the variable of the given
 #   name, which should be the same as is given to getopts(1), OPTARG,
 #   and OPTIND adjusted to support long options in addition to short
-#   options.
+#   options.  A long option name captured into the given variable is
+#   prefixed with a single dash ('-').
 #
 #   Long options are defined by the arguments preceding the variable
 #   name.  Each argument must be in one of the following forms, where
@@ -47,13 +48,13 @@
 #     while getopts hvu:-: opt; do
 #         eval "$parseoptlong"
 #         case "$opt" in
-#             h|help)
+#             h|-help)
 #                 usage; exit ;;
-#             v|verbose)
+#             v|-verbose)
 #                 verbose=t ;;
-#             u|user)
+#             u|-user)
 #                 user="$OPTARG" ;;
-#             password)
+#             -password)
 #                 if [ -n "${OPTARG+t}" ]; then
 #                     # --password=PASSWORD
 #                     password="$OPTARG"
@@ -119,7 +120,7 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
                 # --optarg => return default value
                 echo "\
  $option)
-  $name=\"\$OPTARG\"
+  $name=\"-\$OPTARG\"
   OPTARG=\"${1#*=}\"
   [ -n \"\$OPTARG\" ] || unset OPTARG ;;"
                 ;;
@@ -141,7 +142,7 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
         done
         echo "\
  ${when#"|"})
-  $name=\"\$OPTARG\"
+  $name=\"-\$OPTARG\"
   unset OPTARG ;;"
     fi
 
@@ -173,7 +174,7 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
         done
         echo "\
  ${when#"|"})
-  $name=\"\${OPTARG%%=*}\"
+  $name=\"-\${OPTARG%%=*}\"
   OPTARG=\"\${OPTARG#*=}\" ;;"
     fi
 
@@ -190,7 +191,7 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
         echo "\
  ${when#"|"})
   if [ \$# -ge \$OPTIND ]; then
-   $name=\"\$OPTARG\"
+   $name=\"-\$OPTARG\"
    shift \$((OPTIND-1))
    OPTARG=\"\$1\"
    shift
