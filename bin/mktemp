@@ -1,0 +1,157 @@
+#!/bin/sh
+#
+# mktemp - A shell script implementation of mktemp(1)
+#
+# This script requires "local" builtin to avoid variable name
+# conflicts, and openssl(1) for random number generation.
+#
+# Copyright (c) 2013 Akinori MUSHA
+#
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#    notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+
+mktemp () {
+    local opt ret=0 umask mkdir template parent prefix suffix
+
+    while getopts dt: opt; do
+        case "$opt" in
+            d)
+                mkdir=t
+                ;;
+            t)
+                template="${TMPDIR-/tmp}/$OPTARG.XXXXXXXX"
+                ;;
+            *)
+                return 1
+                ;;
+        esac
+    done
+
+    shift $((OPTIND - 1))
+
+    [ -z "${template:+t}" ] || set -- "$template" "$@"
+
+    if [ $# = 0 ]; then
+        cat <<EOF
+usage: mktemp [-d] [-t prefix] [template ...]
+EOF
+       return 1
+    fi
+
+    for template; do
+        parent="$(dirname -- "$template")"
+        if [ ! -d "$parent" ]; then
+            echo "$0: mktemp: $parent: No such directory" >&2
+            ret=1
+            continue
+        fi
+
+        prefix="$(awk -v v="$template" 'BEGIN { sub(/X*$/, "", v); print v }')"
+        suffix="${template#"$prefix"}"
+        rand="$(while :; do openssl rand -base64 $((${#suffix}*2)) | awk -v n="${#suffix}" '{ gsub(/[+\/=]/, ""); if (length < n) exit(1); print substr($0, 1, n) }' && break; done)"
+
+        umask="$(printf 0%o "$(($(echo "ibase=8;$(umask)" | bc) | 63))")"
+
+        (
+            umask "$umask"
+            output="$(
+                if [ -n "${mkdir:+t}" ]; then
+                    mkdir -m 700 -- "$prefix$rand"
+                else
+                    set -C
+                    : > "$prefix$rand"
+                fi 2>&1 >/dev/null
+            )" && {
+                printf '%s\n' "$prefix$rand"
+                exit 0
+            }
+            case "$output" in
+                *"File exists")
+                    ;;
+                *)
+                    printf '%s\n' "$output" >&2
+                    exit 2
+                    ;;
+            esac
+            exit 1
+        ) 2>/dev/null && {
+            printf '%s\n' "$prefix$rand"
+            continue
+        }
+
+        if [ $? -ge 2 ]; then
+            exit 1
+        fi
+
+        awk -v r="$rand" 'BEGIN {
+  p = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+  nr = r
+  for (n = length(r); ; ) {
+    for (i = 1; ; i++) {
+      if (n < i) exit
+      c = substr(nr, i, 1)
+      nc = substr(p, (ci = index(p, c)) == length(p) ? 1 : ci + 1, 1)
+      nr = substr(nr, 1, i - 1) nc substr(nr, i + 1)
+      if (nc != substr(r, i, 1)) break
+    }
+    print nr
+  }
+}' | (
+            umask "$umask"
+            while read -r rand; do
+                output="$(
+                    if [ -n "${mkdir:+t}" ]; then
+                        mkdir -m 700 -- "$prefix$rand"
+                    else
+                        set -C
+                        : > "$prefix$rand"
+                    fi 2>&1 >/dev/null
+                )" && {
+                    printf '%s\n' "$prefix$rand"
+                    exit 0
+                }
+                case "$output" in
+                    *"File exists")
+                        ;;
+                    *)
+                        printf '%s\n' "$output" >&2
+                        exit 2
+                        ;;
+                esac
+            done
+            exit 1
+        ) || {
+            if [ $? -ge 2 ]; then
+                exit 1
+            fi
+            echo "$0: mktemp: $prefix$rand: File exists" >&2
+            ret=1
+        }
+    done
+
+    return $ret
+}
+
+[ "${0##*/}" = mktemp ] || return
+
+mktemp "$@"
