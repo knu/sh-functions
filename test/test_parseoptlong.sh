@@ -102,3 +102,16 @@ assert_command_output 'error case 2 with colon' 64 \
 ' \
 '' \
 test1 : --user
+
+assert_command_output 'error for unknown long option' 64 \
+'error=?
+' \
+"$0: illegal option -- unknown
+" \
+test1 --unknown=something
+
+assert_command_output 'unknown long option captured with argument' 64 \
+'error=?,unknown=something
+' \
+'' \
+test1 : --unknown=something

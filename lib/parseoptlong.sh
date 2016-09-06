@@ -219,8 +219,7 @@ case \"\$(shift \$((OPTIND-2)) && echo \".\$1\")\" in
     else
         echo "\
  *)
-  $name='?'
-  OPTARG=\"\${OPTARG%%=*}\" ;;"
+  $name='?' ;;"
     fi
 
     echo "\
